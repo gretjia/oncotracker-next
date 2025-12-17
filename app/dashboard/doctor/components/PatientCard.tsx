@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Activity, FileSpreadsheet, Trash2, Pencil, Check, X } from 'lucide-react';
-import { deletePatientAction, updatePatientAction } from '@/app/actions/patient-actions';
+import { Activity, FileSpreadsheet, Trash2, Pencil, Check, X, Upload, Loader2 } from 'lucide-react';
+import { deletePatientAction, updatePatientAction, reUploadPatientData } from '@/app/actions/patient-actions';
 
 interface PatientCardProps {
     patient: any;
@@ -17,9 +17,11 @@ export function PatientCard({ patient }: PatientCardProps) {
     const [isConfirming, setIsConfirming] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
     const [familyName, setFamilyName] = useState(patient.family_name);
     const [givenName, setGivenName] = useState(patient.given_name);
     const [displayName, setDisplayName] = useState(`${patient.family_name} ${patient.given_name}`);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     if (isDeleted) return null;
 
@@ -43,6 +45,31 @@ export function PatientCard({ patient }: PatientCardProps) {
         setFamilyName(patient.family_name);
         setGivenName(patient.given_name);
         setIsEditing(false);
+    };
+
+    const handleReUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const result = await reUploadPatientData(patient.id, formData);
+            if (result.success) {
+                alert('数据更新成功！设置已保留。');
+                window.location.reload(); // Refresh to show new data
+            } else {
+                alert('更新失败: ' + result.error);
+            }
+        } catch (err: any) {
+            alert('上传失败: ' + err.message);
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = ''; // Reset input
+            }
+        }
     };
 
     return (
@@ -125,6 +152,29 @@ export function PatientCard({ patient }: PatientCardProps) {
                             <FileSpreadsheet className="w-4 h-4" /> 编辑数据
                         </Button>
                     </Link>
+                    <div className="relative">
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".xlsx,.xls"
+                            title="选择患者数据文件"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            onChange={handleReUpload}
+                            disabled={isUploading}
+                        />
+                        <Button
+                            variant="outline"
+                            size="default"
+                            className="gap-2 text-emerald-600 border-emerald-200 hover:bg-emerald-50 min-h-[44px]"
+                            disabled={isUploading}
+                        >
+                            {isUploading ? (
+                                <><Loader2 className="w-4 h-4 animate-spin" /> 上传中...</>
+                            ) : (
+                                <><Upload className="w-4 h-4" /> 更新数据</>
+                            )}
+                        </Button>
+                    </div>
                     {isConfirming ? (
                         <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-200">
                             <span className="text-xs font-bold text-red-600">确认删除?</span>

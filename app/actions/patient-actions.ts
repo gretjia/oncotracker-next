@@ -294,6 +294,114 @@ export async function updatePatientAction(patientId: string, familyName: string,
     }
 }
 
+/**
+ * Re-upload patient data - Option A: Full Replace
+ * 
+ * 1. Deletes all existing observations for the patient
+ * 2. Processes and saves the new file
+ * 3. Preserves all user settings (stored separately by metric name)
+ */
+export async function reUploadPatientData(patientId: string, formData: FormData) {
+    try {
+        const supabase = await createServerClient();
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+        if (authError || !user) {
+            return { success: false, error: '未授权' };
+        }
+
+        // Get patient info for file processing
+        const { data: patient, error: patientError } = await supabaseAdmin
+            .from('patients')
+            .select('family_name, given_name')
+            .eq('id', patientId)
+            .single();
+
+        if (patientError || !patient) {
+            return { success: false, error: '找不到患者信息' };
+        }
+
+        const patientName = `${patient.family_name}${patient.given_name}`;
+        const file = formData.get('file') as File;
+
+        if (!file || file.size === 0) {
+            return { success: false, error: '未上传文件' };
+        }
+
+        console.log(`[ReUpload] Starting re-upload for patient ${patientId} (${patientName})`);
+
+        // Step 1: Delete existing observations (settings preserved in separate table)
+        const { error: deleteError } = await supabaseAdmin
+            .from('observations')
+            .delete()
+            .eq('patient_id', patientId);
+
+        if (deleteError) {
+            console.error('[ReUpload] Failed to delete observations:', deleteError);
+            return { success: false, error: '删除旧数据失败: ' + deleteError.message };
+        }
+
+        console.log(`[ReUpload] Deleted existing observations for patient ${patientId}`);
+
+        // Step 2: Parse file to check if canonical
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: 'buffer' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+
+        // Detect header row
+        let headerRowIndex = 2;
+        for (let i = 0; i < Math.min(5, rawData.length); i++) {
+            const row = rawData[i];
+            if (row && (row[0] === '子类' || row.includes('Weight') || row.includes('CEA'))) {
+                headerRowIndex = i;
+                break;
+            }
+        }
+
+        const headers = rawData[headerRowIndex] || [];
+        const unitsRow = rawData[headerRowIndex + 1] || [];
+        const isCanonical = detectCanonicalFormat(headers, unitsRow);
+
+        console.log(`[ReUpload] File format: ${isCanonical ? 'CANONICAL' : 'NEEDS_MAPPING'}`);
+
+        // Step 3: Get mapping if needed
+        let mapping = null;
+        if (!isCanonical) {
+            const samples = rawData.slice(headerRowIndex + 2, headerRowIndex + 5);
+            mapping = await analyzeStructure(headers, samples);
+            console.log('[ReUpload] AI mapping generated');
+        }
+
+        // Step 4: Process and save dataset (reuse existing function)
+        // Create a new File object from the buffer for processAndSaveDataset
+        const fileBlob = new Blob([buffer], { type: file.type });
+        const newFile = new File([fileBlob], file.name, { type: file.type });
+
+        await processAndSaveDataset(
+            newFile,
+            patientId,
+            supabaseAdmin,
+            mapping,
+            patientName,
+            isCanonical
+        );
+
+        console.log(`[ReUpload] Successfully re-uploaded data for ${patientName}`);
+
+        revalidatePath('/dashboard/doctor');
+        revalidatePath(`/journey`);
+        revalidatePath(`/manage-data`);
+
+        return { success: true };
+
+    } catch (error: any) {
+        console.error('[ReUpload] Error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
 // Helper to process dataset
 import * as XLSX from 'xlsx';
 import {
