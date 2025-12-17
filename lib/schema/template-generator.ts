@@ -8,16 +8,16 @@
  */
 
 import * as XLSX from 'xlsx';
-import { 
-  FIXED_COLUMNS, 
-  ROW_INDICES, 
+import {
+  FIXED_COLUMNS,
+  ROW_INDICES,
   SCHEMA_VERSION,
-  METRIC_CATEGORIES 
+  METRIC_CATEGORIES
 } from './oncology-dataset.schema';
-import { 
-  METRIC_DICTIONARY, 
+import {
+  METRIC_DICTIONARY,
   getMetricsByCategory,
-  MetricDefinition 
+  MetricDefinition
 } from './metric-dictionary';
 
 // =============================================================================
@@ -48,7 +48,7 @@ export function generateCanonicalTemplate(options: TemplateOptions = {}): Buffer
 
   // Determine which metrics to include
   let selectedMetrics: MetricDefinition[];
-  
+
   if (includeAllMetrics) {
     // Include all metrics from dictionary, sorted by column order
     selectedMetrics = Object.values(METRIC_DICTIONARY)
@@ -68,8 +68,8 @@ export function generateCanonicalTemplate(options: TemplateOptions = {}): Buffer
 
   // Row 0: Title
   const titleRow = new Array(totalColumns).fill('');
-  titleRow[0] = patientName 
-    ? `${patientName} - 肿瘤病程周期表` 
+  titleRow[0] = patientName
+    ? `${patientName} - 肿瘤病程周期表`
     : '肿瘤病程周期表';
   data.push(titleRow);
 
@@ -78,17 +78,17 @@ export function generateCanonicalTemplate(options: TemplateOptions = {}): Buffer
   categoryRow[FIXED_COLUMNS.DATE] = '分类';
   categoryRow[FIXED_COLUMNS.PHASE] = '节拍';
   categoryRow[FIXED_COLUMNS.EVENT] = '事件';
-  
+
   // Add category headers for metrics
   let currentCategory = '';
   selectedMetrics.forEach((metric, idx) => {
     if (metric.category !== currentCategory) {
-      const categoryLabel = {
+      const categoryLabel = ({
         'PERFORMANCE': '体能负荷',
         'MOLECULAR': '分子负荷',
         'IMAGING': '影像负荷',
         'SIDE_EFFECTS': '副作用',
-      }[metric.category] || '';
+      } as Record<string, string>)[metric.category] || '';
       categoryRow[FIXED_COLUMNS.SCHEME_DETAIL + 1 + idx] = categoryLabel;
       currentCategory = metric.category;
     }
@@ -104,7 +104,7 @@ export function generateCanonicalTemplate(options: TemplateOptions = {}): Buffer
   headerRow[FIXED_COLUMNS.SCHEME] = '方案';
   headerRow[FIXED_COLUMNS.EVENT] = '处置';
   headerRow[FIXED_COLUMNS.SCHEME_DETAIL] = '方案';
-  
+
   selectedMetrics.forEach((metric, idx) => {
     headerRow[FIXED_COLUMNS.SCHEME_DETAIL + 1 + idx] = metric.canonical;
   });
@@ -115,7 +115,7 @@ export function generateCanonicalTemplate(options: TemplateOptions = {}): Buffer
   unitRow[FIXED_COLUMNS.DATE] = '日期\\单位';
   unitRow[FIXED_COLUMNS.CYCLE] = '当下周期';
   unitRow[FIXED_COLUMNS.PREV_CYCLE] = '前序周期';
-  
+
   selectedMetrics.forEach((metric, idx) => {
     unitRow[FIXED_COLUMNS.SCHEME_DETAIL + 1 + idx] = metric.threshold || metric.unit;
   });
@@ -128,7 +128,7 @@ export function generateCanonicalTemplate(options: TemplateOptions = {}): Buffer
 
   // Create workbook
   const worksheet = XLSX.utils.aoa_to_sheet(data);
-  
+
   // Set column widths
   worksheet['!cols'] = [
     { wch: 12 },  // Date
@@ -153,7 +153,7 @@ export function generateCanonicalTemplate(options: TemplateOptions = {}): Buffer
 export function generateMinimalTemplate(patientName?: string): Buffer {
   const commonMetrics = [
     'Weight',
-    'ECOG', 
+    'ECOG',
     'MRD',
     'CEA',
     'CA125',
@@ -238,7 +238,7 @@ export function generateReferenceSheet(): string {
 
   lines.push('');
   lines.push('### 分子负荷 (Molecular)');
-  
+
   getMetricsByCategory('MOLECULAR').forEach(m => {
     const threshold = m.threshold ? ` - 正常值: ${m.threshold}` : '';
     lines.push(`- **${m.canonical}** (${m.chinese}) - 单位: ${m.unit}${threshold}`);
@@ -246,14 +246,14 @@ export function generateReferenceSheet(): string {
 
   lines.push('');
   lines.push('### 影像负荷 (Imaging)');
-  
+
   getMetricsByCategory('IMAGING').forEach(m => {
     lines.push(`- **${m.canonical}** (${m.chinese}) - 单位: ${m.unit}`);
   });
 
   lines.push('');
   lines.push('### 副作用 (Side Effects)');
-  
+
   getMetricsByCategory('SIDE_EFFECTS').forEach(m => {
     lines.push(`- **${m.canonical}** (${m.chinese}) - 单位: ${m.unit}`);
   });

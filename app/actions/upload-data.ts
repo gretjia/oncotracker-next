@@ -34,7 +34,7 @@ export async function uploadData(formData: FormData) {
         // Let's convert array-of-objects to array-of-arrays to reuse the header extraction logic
         if (rawData.length > 0 && typeof rawData[0] === 'object') {
             const headers = Object.keys(rawData[0]);
-            const rows = rawData.map(obj => headers.map(h => obj[h]));
+            const rows = rawData.map(obj => headers.map(h => (obj as Record<string, any>)[h]));
             rawData = [headers, ...rows]; // Prepend headers
 
             // Adjust for the "row 2" assumption in the existing code?

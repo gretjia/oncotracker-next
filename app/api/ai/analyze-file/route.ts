@@ -28,7 +28,7 @@ export async function POST(req: Request) {
             schema: AnalysisResultSchema,
             system: systemPrompt,
             prompt: userPrompt,
-            temperature: 0.1,
+            // Note: Temperature removed for Qwen compatibility
         });
 
         return result.toTextStreamResponse();

@@ -13,16 +13,16 @@
 
 import { generateText } from 'ai';
 import { qwen } from '@/lib/ai/model';
-import { 
-  getDataMappingSystemPrompt, 
+import {
+  getDataMappingSystemPrompt,
   getDataMappingUserPrompt,
   CANONICAL_SCHEMA
 } from '@/lib/ai/prompts/data-mapping';
-import { 
-  lookupMetric, 
-  getCanonicalMetricName, 
+import {
+  lookupMetric,
+  getCanonicalMetricName,
   isKnownMetric,
-  METRIC_DICTIONARY 
+  METRIC_DICTIONARY
 } from '@/lib/schema/metric-dictionary';
 import { SCHEMA_VERSION } from '@/lib/schema/oncology-dataset.schema';
 
@@ -88,13 +88,13 @@ export interface LegacyMappingResult {
  * @returns Mapping result with canonical column assignments
  */
 export async function analyzeStructure(
-  fileHeader: any[], 
+  fileHeader: any[],
   sampleRows: any[]
 ): Promise<LegacyMappingResult> {
   console.log('[Qwen] Starting data analysis...');
   console.log('[Qwen] Headers:', fileHeader.slice(0, 10));
   console.log('[Qwen] Sample row 0:', sampleRows[0]?.slice?.(0, 10));
-  
+
   // Step 1: Check if file is EXACTLY in canonical format
   // This is the ONLY case where we skip AI
   const canonicalCheck = isExactlyCanonical(fileHeader);
@@ -102,28 +102,28 @@ export async function analyzeStructure(
     console.log('[Qwen] File is EXACTLY canonical format - using direct mapping');
     return canonicalCheck.mapping!;
   }
-  
+
   console.log('[Qwen] File needs AI transformation - calling Qwen...');
-  
+
   // Step 2: Use AI for intelligent analysis
   try {
     const aiResult = await callAIForAnalysis(fileHeader, sampleRows);
     console.log('[Qwen] AI analysis complete');
-    
+
     // Step 3: Convert to legacy format
     const mapping = convertAIResultToLegacy(aiResult, fileHeader);
-    
+
     // Step 4: Validate the mapping
     const validation = validateMapping(mapping);
     if (!validation.valid) {
       console.warn('[Qwen] Mapping validation warnings:', validation.warnings);
     }
-    
+
     return mapping;
-    
+
   } catch (error) {
     console.error('[Qwen] AI analysis failed:', error);
-    
+
     // Step 5: Last resort - rule-based fallback (but log warning)
     console.warn('[Qwen] Using rule-based fallback - this may be less accurate');
     return ruleBasedFallback(fileHeader, sampleRows);
@@ -143,7 +143,7 @@ function isExactlyCanonical(headers: any[]): { isCanonical: boolean; mapping?: L
   if (!Array.isArray(headers) || headers.length < 10) {
     return { isCanonical: false };
   }
-  
+
   // EXACT header matches required for fixed columns
   const fixedColumnChecks = [
     headers[0] === '子类',        // Date column
@@ -154,33 +154,33 @@ function isExactlyCanonical(headers: any[]): { isCanonical: boolean; mapping?: L
     headers[5] === '处置',        // Event
     headers[6] === '方案',        // SchemeDetail (second 方案)
   ];
-  
+
   const passedFixedChecks = fixedColumnChecks.filter(Boolean).length;
-  
+
   // Must pass ALL fixed column checks
   if (passedFixedChecks < 6) {  // Allow one mismatch for flexibility
     console.log(`[Canonical Check] Failed: only ${passedFixedChecks}/7 fixed columns match`);
     return { isCanonical: false };
   }
-  
+
   // Check metric columns (starting at index 7)
   const expectedMetrics = CANONICAL_SCHEMA.metricOrder;
   let matchedMetrics = 0;
-  
+
   for (let i = 0; i < expectedMetrics.length && (7 + i) < headers.length; i++) {
     if (headers[7 + i] === expectedMetrics[i]) {
       matchedMetrics++;
     }
   }
-  
+
   // Must have at least 5 metrics in correct positions
   if (matchedMetrics < 5) {
     console.log(`[Canonical Check] Failed: only ${matchedMetrics} metrics in correct positions`);
     return { isCanonical: false };
   }
-  
+
   console.log(`[Canonical Check] PASSED: ${passedFixedChecks}/7 fixed, ${matchedMetrics} metrics`);
-  
+
   // Build mapping for canonical file - include ALL metrics, not just known ones
   const metrics: Record<string, string> = {};
   for (let i = 7; i < headers.length; i++) {
@@ -190,7 +190,7 @@ function isExactlyCanonical(headers: any[]): { isCanonical: boolean; mapping?: L
       metrics[h] = isKnownMetric(h) ? getCanonicalMetricName(h) : h;
     }
   }
-  
+
   return {
     isCanonical: true,
     mapping: {
@@ -212,25 +212,25 @@ function isExactlyCanonical(headers: any[]): { isCanonical: boolean; mapping?: L
 async function callAIForAnalysis(headers: any[], sampleRows: any[]): Promise<AIAnalysisResult> {
   const systemPrompt = getDataMappingSystemPrompt();
   const userPrompt = getDataMappingUserPrompt(headers, sampleRows);
-  
+
   const { text } = await generateText({
     model: qwen,
     prompt: `${systemPrompt}\n\n${userPrompt}`,
-    temperature: 0.1,  // Low temperature for consistent analysis
+    // Note: Temperature removed for Qwen compatibility
   });
-  
+
   // Parse AI response
   let jsonStr = text
     .replace(/```json\s*/g, '')
     .replace(/```\s*/g, '')
     .trim();
-  
+
   // Try to extract JSON if there's extra text
   const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
   if (jsonMatch) {
     jsonStr = jsonMatch[0];
   }
-  
+
   try {
     const result = JSON.parse(jsonStr);
     console.log('[Qwen] Parsed AI result:', JSON.stringify(result, null, 2).slice(0, 500));
@@ -247,7 +247,7 @@ async function callAIForAnalysis(headers: any[], sampleRows: any[]): Promise<AIA
 function convertAIResultToLegacy(aiResult: AIAnalysisResult, headers: any[]): LegacyMappingResult {
   const metrics: Record<string, string> = {};
   const events: string[] = [];
-  
+
   // Process metric mappings - include ALL metrics, even custom ones with low confidence
   if (aiResult.metricMappings) {
     Object.entries(aiResult.metricMappings).forEach(([sourceName, mapping]) => {
@@ -257,7 +257,7 @@ function convertAIResultToLegacy(aiResult: AIAnalysisResult, headers: any[]): Le
       // 3. Has a canonical name assigned
       const isCustom = (mapping as any).isCustomMetric === true;
       const hasCanonicalName = mapping.canonicalName && mapping.canonicalName.trim();
-      
+
       if ((mapping.confidence >= 0.5 || isCustom) && hasCanonicalName) {
         metrics[sourceName] = mapping.canonicalName;
         if (isCustom) {
@@ -266,7 +266,7 @@ function convertAIResultToLegacy(aiResult: AIAnalysisResult, headers: any[]): Le
       }
     });
   }
-  
+
   // Process fixed column mappings for events
   const fixedMappings = aiResult.fixedColumnMappings;
   if (fixedMappings) {
@@ -275,15 +275,15 @@ function convertAIResultToLegacy(aiResult: AIAnalysisResult, headers: any[]): Le
     if (fixedMappings.cycle?.sourceName) events.push(fixedMappings.cycle.sourceName);
     if (fixedMappings.scheme?.sourceName) events.push(fixedMappings.scheme.sourceName);
   }
-  
+
   // Determine date column
   let dateCol: string | null = null;
   let dateColIndex = 0;
-  
+
   if (aiResult.dateColumn) {
     dateCol = aiResult.dateColumn.sourceName || 'column_0';
     dateColIndex = aiResult.dateColumn.sourceIndex ?? 0;
-    
+
     // If dateCol is a non-date column name, force to column 0
     const nonDateNames = ['项目', 'Phase', '处置', 'Event', '周期', 'Cycle'];
     if (dateCol && nonDateNames.includes(dateCol)) {
@@ -292,7 +292,7 @@ function convertAIResultToLegacy(aiResult: AIAnalysisResult, headers: any[]): Le
       dateColIndex = 0;
     }
   }
-  
+
   return {
     date_col: dateCol,
     date_col_index: dateColIndex,
@@ -314,13 +314,13 @@ function ruleBasedFallback(headers: any[], sampleRows: any[]): LegacyMappingResu
   const events: string[] = [];
   let dateCol: string | null = null;
   let dateColIndex = 0;
-  
+
   // Analyze sample data to find date column
   // Look for Excel serial dates (numbers 40000-50000) or date strings
   for (let colIdx = 0; colIdx < Math.min(10, headers.length); colIdx++) {
     const values = sampleRows.map(row => row?.[colIdx]).filter(v => v !== undefined && v !== null);
     const numValues = values.filter(v => typeof v === 'number');
-    
+
     if (numValues.length > 0) {
       const avg = numValues.reduce((a, b) => a + b, 0) / numValues.length;
       // Excel dates for years 2020-2030 are roughly 43831-47483
@@ -332,29 +332,29 @@ function ruleBasedFallback(headers: any[], sampleRows: any[]): LegacyMappingResu
       }
     }
   }
-  
+
   // If no date found by value analysis, default to column 0
   if (!dateCol) {
     dateCol = headers[0] || 'column_0';
     dateColIndex = 0;
     console.log('[Fallback] No date column detected, defaulting to column 0');
   }
-  
+
   // Map headers to metrics - preserve ALL numeric columns, not just known ones
   const fixedColumnKeywords = ['项目', '处置', 'Phase', 'Event', '周期', 'Cycle', '方案', 'Scheme', '子类', 'Date'];
-  
+
   headers.forEach((h, idx) => {
     if (!h || typeof h !== 'string') return;
     if (idx === dateColIndex) return; // Skip date column
-    
+
     const headerName = h.trim();
-    
+
     // Check for event/fixed columns
     if (fixedColumnKeywords.some(kw => headerName.includes(kw))) {
       events.push(headerName);
       return;
     }
-    
+
     // Check for known metrics (including Chinese aliases)
     const metric = lookupMetric(headerName);
     if (metric) {
@@ -363,7 +363,7 @@ function ruleBasedFallback(headers: any[], sampleRows: any[]): LegacyMappingResu
       // Check if this column has numeric data (likely a metric)
       const values = sampleRows.map(row => row?.[idx]).filter(v => v !== undefined && v !== null && v !== '');
       const hasNumericData = values.some(v => typeof v === 'number' || !isNaN(parseFloat(v)));
-      
+
       if (hasNumericData) {
         // Preserve unknown metric with original name
         metrics[headerName] = headerName;
@@ -371,7 +371,7 @@ function ruleBasedFallback(headers: any[], sampleRows: any[]): LegacyMappingResu
       }
     }
   });
-  
+
   return {
     date_col: dateCol,
     date_col_index: dateColIndex,
@@ -389,12 +389,12 @@ function ruleBasedFallback(headers: any[], sampleRows: any[]): LegacyMappingResu
  */
 function validateMapping(mapping: LegacyMappingResult): { valid: boolean; warnings: string[] } {
   const warnings: string[] = [];
-  
+
   // Check date column
   if (!mapping.date_col) {
     warnings.push('No date column identified - will default to column 0');
   }
-  
+
   // Check metrics count
   const metricCount = Object.keys(mapping.metrics).length;
   if (metricCount === 0) {
@@ -402,7 +402,7 @@ function validateMapping(mapping: LegacyMappingResult): { valid: boolean; warnin
   } else if (metricCount < 3) {
     warnings.push(`Only ${metricCount} metrics mapped - expected more`);
   }
-  
+
   // Check for required metrics
   const mappedCanonical = new Set(Object.values(mapping.metrics));
   const importantMetrics = ['Weight', 'CEA', 'CA125'];
@@ -411,7 +411,7 @@ function validateMapping(mapping: LegacyMappingResult): { valid: boolean; warnin
       warnings.push(`Important metric "${m}" not found in mapping`);
     }
   });
-  
+
   return {
     valid: warnings.length === 0,
     warnings,

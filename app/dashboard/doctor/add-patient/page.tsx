@@ -22,7 +22,7 @@ export default function AddPatientPage() {
     const [error, setError] = useState('');
     const [mappingResult, setMappingResult] = useState<any>(null);
     const [file, setFile] = useState<File | null>(null);
-    const [useDeepAnalysis, setUseDeepAnalysis] = useState(false);
+
     const [isCanonical, setIsCanonical] = useState(false);
 
     const { object, submit, isLoading: isAIProcessing, error: aiError } = useObject({
@@ -128,7 +128,7 @@ export default function AddPatientPage() {
 
         // 3. Trigger AI Analysis
         const samples = rawData.slice(headerRowIndex + 1, headerRowIndex + 6);
-        submit({ headers, samples, useDeepAnalysis });
+        submit({ headers, samples, useDeepAnalysis: true });
     }
 
     async function handleSubmit(formData: FormData) {
@@ -163,31 +163,26 @@ export default function AddPatientPage() {
                                 <ArrowLeft className="w-4 h-4" />
                             </Button>
                         </Link>
-                        <CardTitle>Add New Patient</CardTitle>
+                        <CardTitle>添加新患者</CardTitle>
                     </div>
                     <CardDescription>
-                        Register a new patient. Upload a file to automatically map data.
+                        注册新患者。上传文件可自动映射数据。
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <form action={handleSubmit} className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="fullName">Full Name (姓名)</Label>
-                            <Input id="fullName" name="fullName" placeholder="e.g. Zhang Li" required />
+                            <Label htmlFor="fullName">姓名</Label>
+                            <Input id="fullName" name="fullName" placeholder="例如：张三" required />
                         </div>
 
                         <div className="space-y-2 pt-4 border-t border-slate-100">
                             <div className="flex items-center justify-between">
-                                <Label htmlFor="dataset">Upload Initial Dataset</Label>
+                                <Label htmlFor="dataset">上传初始数据</Label>
                                 <div className="flex items-center gap-2">
-                                    <Switch
-                                        id="deep-analysis"
-                                        checked={useDeepAnalysis}
-                                        onCheckedChange={setUseDeepAnalysis}
-                                    />
-                                    <Label htmlFor="deep-analysis" className="text-xs text-slate-500 cursor-pointer flex items-center gap-1">
+                                    <Label className="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded flex items-center gap-1 border border-emerald-100">
                                         <BrainCircuit className="w-3 h-3" />
-                                        Deep Analysis (Slower)
+                                        深度分析已启用
                                     </Label>
                                 </div>
                             </div>
@@ -212,18 +207,18 @@ export default function AddPatientPage() {
                         {/* Result Display */}
                         {isCanonical && (
                             <div className="p-3 bg-emerald-50 text-emerald-700 text-sm rounded border border-emerald-100">
-                                <p className="font-bold mb-1">✓ Canonical Format Detected</p>
-                                <p className="text-xs">File is already in standard format. No AI analysis needed.</p>
+                                <p className="font-bold mb-1">✓ 已检测到标准格式</p>
+                                <p className="text-xs">文件已是标准格式，无需AI分析。</p>
                             </div>
                         )}
 
                         {!isCanonical && object?.analysis && (
                             <div className="p-3 bg-blue-50 text-blue-700 text-sm rounded border border-blue-100">
-                                <p className="font-bold mb-1">AI Analysis Result:</p>
+                                <p className="font-bold mb-1">AI分析结果:</p>
                                 <ul className="list-disc pl-4 space-y-0.5 text-xs">
-                                    <li>Columns: {object.analysis.totalColumns} detected</li>
-                                    <li>Date Column: {object.dateColumn?.sourceName || 'None'} ({Math.round((object.dateColumn?.confidence || 0) * 100)}%)</li>
-                                    <li>Metrics Mapped: {Object.keys(object.metricMappings || {}).length}</li>
+                                    <li>列数: {object.analysis.totalColumns} 已检测</li>
+                                    <li>日期列: {object.dateColumn?.sourceName || '无'} ({Math.round((object.dateColumn?.confidence || 0) * 100)}%)</li>
+                                    <li>已映射指标: {Object.keys(object.metricMappings || {}).length}</li>
                                 </ul>
                             </div>
                         )}
@@ -238,10 +233,10 @@ export default function AddPatientPage() {
                             <Button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-700" disabled={isLoading || isAIProcessing || (!isCanonical && !mappingResult)}>
                                 {isLoading ? (
                                     <>
-                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating...
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" /> 创建中...
                                     </>
                                 ) : (
-                                    'Create Patient Account'
+                                    '创建患者账户'
                                 )}
                             </Button>
 
@@ -260,7 +255,7 @@ export default function AddPatientPage() {
                                     }
                                 }}
                             >
-                                Start with Empty Template
+                                从空模板开始
                             </Button>
                         </div>
                     </form>

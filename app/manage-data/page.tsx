@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -10,7 +10,7 @@ import { DataSpreadsheet } from '@/components/DataSpreadsheet';
 import { FormalDataset, FormalDatasetRow } from '@/lib/types';
 import { uploadData } from '@/app/actions/upload-data';
 
-export default function ManageDataPage() {
+function ManageDataContent() {
     const searchParams = useSearchParams();
     const patientId = searchParams.get('patientId');
 
@@ -52,7 +52,7 @@ export default function ManageDataPage() {
     };
 
     const handleAddMetric = () => {
-        const name = window.prompt("Enter new metric name:");
+        const name = window.prompt("请输入新指标名称:");
         if (!name) return;
 
         // Find next Unnamed index
@@ -121,7 +121,7 @@ export default function ManageDataPage() {
 
     const handleSave = () => {
         console.log("Saving data...", rows);
-        alert("Save functionality coming soon (requires backend API update). Data is logged to console.");
+        alert("保存功能即将上线（需要后端API更新）。数据已记录到控制台。");
         // TODO: Implement API call to save. The current uploadData action only handles files.
         // We need an action or API route to save the JSON directly.
     };
@@ -140,9 +140,9 @@ export default function ManageDataPage() {
                     <div className="flex flex-col">
                         <h1 className="font-bold text-slate-800 text-lg flex items-center gap-2">
                             <Database className="w-5 h-5 text-blue-600" />
-                            Data Manager
+                            数据管理器
                         </h1>
-                        <span className="text-xs text-slate-500 font-medium">Patient: {patientName}</span>
+                        <span className="text-xs text-slate-500 font-medium">患者: {patientName}</span>
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -156,12 +156,12 @@ export default function ManageDataPage() {
                         />
                         <Button variant="outline" size="sm" className="gap-2 text-slate-600 hover:text-blue-600 hover:border-blue-200">
                             <Upload className="w-4 h-4" />
-                            Import
+                            导入
                         </Button>
                     </div>
                     <Button size="sm" className="gap-2 bg-blue-600 hover:bg-blue-700 shadow-sm transition-all hover:shadow-md" onClick={handleSave}>
                         <Save className="w-4 h-4" />
-                        Save Changes
+                        保存更改
                     </Button>
                 </div>
             </header>
@@ -170,11 +170,11 @@ export default function ManageDataPage() {
             <div className="bg-white border-b border-slate-200 px-6 py-2 flex items-center gap-2 shrink-0">
                 <Button variant="ghost" size="sm" onClick={handleAddRow} className="gap-2 text-slate-700 hover:bg-slate-100 hover:text-blue-600">
                     <Plus className="w-4 h-4" />
-                    Add Row
+                    添加行
                 </Button>
                 <Button variant="ghost" size="sm" onClick={handleAddMetric} className="gap-2 text-slate-700 hover:bg-slate-100 hover:text-blue-600">
                     <LayoutGrid className="w-4 h-4" />
-                    Add Metric
+                    添加指标
                 </Button>
             </div>
 
@@ -184,7 +184,7 @@ export default function ManageDataPage() {
                     {isLoading ? (
                         <div className="flex-1 flex items-center justify-center text-slate-400 gap-2">
                             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                            Loading dataset...
+                            加载数据中...
                         </div>
                     ) : rows.length > 0 ? (
                         <DataSpreadsheet
@@ -195,7 +195,7 @@ export default function ManageDataPage() {
                     ) : (
                         <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-4">
                             <FileSpreadsheet className="w-16 h-16 opacity-10" />
-                            <p className="font-medium">No dataset loaded</p>
+                            <p className="font-medium">未加载数据集</p>
                             <div className="relative">
                                 <input
                                     type="file"
@@ -204,7 +204,7 @@ export default function ManageDataPage() {
                                     onChange={handleFileUpload}
                                 />
                                 <Button variant="outline">
-                                    Upload Excel File
+                                    上传Excel文件
                                 </Button>
                             </div>
                         </div>
@@ -212,5 +212,13 @@ export default function ManageDataPage() {
                 </div>
             </main>
         </div>
+    );
+}
+
+export default function ManageDataPage() {
+    return (
+        <Suspense fallback={<div>加载数据管理器...</div>}>
+            <ManageDataContent />
+        </Suspense>
     );
 }

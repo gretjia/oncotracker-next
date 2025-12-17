@@ -41,7 +41,11 @@ function LoginForm() {
             // If success, the server action redirects, so we don't need to do anything here.
             // The browser will navigate away.
 
-        } catch (err) {
+        } catch (err: any) {
+            // NEXT_REDIRECT is thrown by Next.js redirect() - this is expected behavior, not an error
+            if (err?.digest?.startsWith('NEXT_REDIRECT')) {
+                return; // Let the redirect happen silently
+            }
             console.error('Login error:', err);
             setError('An unexpected error occurred');
             setIsLoading(false);
@@ -49,7 +53,7 @@ function LoginForm() {
     };
 
 
-    const roleTitle = role === 'doctor' ? 'Provider' : role === 'supervisor' ? 'Supervisor' : 'Patient';
+    const roleTitle = role === 'doctor' ? '医生' : role === 'supervisor' ? '管理员' : '患者';
 
     return (
         <Card className="w-full max-w-md border-slate-200 shadow-lg">
@@ -63,9 +67,9 @@ function LoginForm() {
                     </div>
                     <div className="w-5" /> {/* Spacer */}
                 </div>
-                <CardTitle className="text-2xl font-bold text-center pt-4">{roleTitle} Login</CardTitle>
+                <CardTitle className="text-2xl font-bold text-center pt-4">{roleTitle}登录</CardTitle>
                 <CardDescription className="text-center">
-                    Enter your credentials to access your account
+                    请输入您的账号信息
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -76,10 +80,12 @@ function LoginForm() {
                 )}
                 <form onSubmit={handleLogin} className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email">邮箱</Label>
                         <Input
                             id="email"
+                            name="email"
                             type="email"
+                            autoComplete="email"
                             placeholder="name@example.com"
                             required
                             value={email}
@@ -87,23 +93,25 @@ function LoginForm() {
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="password">Password</Label>
+                        <Label htmlFor="password">密码</Label>
                         <Input
                             id="password"
+                            name="password"
                             type="password"
+                            autoComplete="current-password"
                             required
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                         />
                     </div>
                     <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
-                        {isLoading ? "Signing in..." : "Sign In"}
+                        {isLoading ? "登录中..." : "登录"}
                     </Button>
                 </form>
             </CardContent>
             <CardFooter className="flex justify-center">
                 <div className="text-sm text-slate-500">
-                    Don't have an account? <Link href={`/auth/register?role=${role}`} className="text-blue-600 hover:underline">Sign up</Link>
+                    没有账号？ <Link href={`/auth/register?role=${role}`} className="text-blue-600 hover:underline">注册</Link>
                 </div>
             </CardFooter>
         </Card>

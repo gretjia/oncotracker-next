@@ -250,6 +250,50 @@ export async function deletePatientAction(patientId: string) {
     }
 }
 
+export async function updatePatientAction(patientId: string, familyName: string, givenName: string) {
+    try {
+        const supabase = await createServerClient();
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+        if (authError || !user) {
+            return { success: false, error: '未授权' };
+        }
+
+        // Update patient record
+        const { error: updateError } = await supabaseAdmin
+            .from('patients')
+            .update({
+                family_name: familyName,
+                given_name: givenName
+            })
+            .eq('id', patientId);
+
+        if (updateError) {
+            console.error('Update Patient Error:', updateError);
+            return { success: false, error: updateError.message };
+        }
+
+        // Also update user metadata
+        const { error: metaError } = await supabaseAdmin.auth.admin.updateUserById(patientId, {
+            user_metadata: {
+                full_name: `${familyName}${givenName}`
+            }
+        });
+
+        if (metaError) {
+            console.warn('Failed to update user metadata:', metaError);
+            // Don't fail the whole operation for this
+        }
+
+        revalidatePath('/dashboard/doctor');
+        return { success: true };
+
+    } catch (error: any) {
+        console.error('Update Patient Error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
 // Helper to process dataset
 import * as XLSX from 'xlsx';
 import {

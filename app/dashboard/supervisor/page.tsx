@@ -14,9 +14,9 @@ export default function SupervisorDashboard() {
     ];
 
     const stats = [
-        { label: "Total Patients", value: "1,240" },
-        { label: "Active Doctors", value: "48" },
-        { label: "Pending Approvals", value: "2" },
+        { label: "患者总数", value: "1,240" },
+        { label: "活跃医生", value: "48" },
+        { label: "待审批", value: "2" },
     ];
 
     return (
@@ -27,13 +27,13 @@ export default function SupervisorDashboard() {
                     <div className="w-8 h-8 bg-indigo-500 rounded flex items-center justify-center text-white">
                         <ShieldCheck className="w-5 h-5" />
                     </div>
-                    <span className="font-bold text-white text-lg">OncoTracker <span className="text-indigo-300 text-xs ml-1 border border-indigo-700 px-2 py-0.5 rounded-full">Admin</span></span>
+                    <span className="font-bold text-white text-lg">OncoTracker <span className="text-indigo-300 text-xs ml-1 border border-indigo-700 px-2 py-0.5 rounded-full">管理员</span></span>
                 </div>
                 <div className="flex items-center gap-4">
-                    <span className="text-slate-300 text-sm">Supervisor Admin</span>
+                    <span className="text-slate-300 text-sm">系统管理员</span>
                     <Link href="/">
                         <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white hover:bg-slate-800">
-                            <LogOut className="w-4 h-4 mr-2" /> Sign Out
+                            <LogOut className="w-4 h-4 mr-2" /> 退出登录
                         </Button>
                     </Link>
                 </div>
@@ -57,7 +57,7 @@ export default function SupervisorDashboard() {
                 {/* Approval Queue */}
                 <div className="space-y-4">
                     <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                        <Users className="w-5 h-5 text-indigo-600" /> Pending Approvals
+                        <Users className="w-5 h-5 text-indigo-600" /> 待审批用户
                     </h2>
 
                     <Card>
@@ -79,17 +79,17 @@ export default function SupervisorDashboard() {
 
                                     <div className="flex items-center gap-2">
                                         <Button size="sm" className="bg-green-600 hover:bg-green-700 gap-1">
-                                            <Check className="w-4 h-4" /> Approve
+                                            <Check className="w-4 h-4" /> 通过
                                         </Button>
                                         <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 border-red-200 gap-1">
-                                            <X className="w-4 h-4" /> Reject
+                                            <X className="w-4 h-4" /> 拒绝
                                         </Button>
                                     </div>
                                 </div>
                             ))}
                             {pendingApprovals.length === 0 && (
                                 <div className="p-8 text-center text-slate-500">
-                                    No pending approvals.
+                                    暂无待审批用户。
                                 </div>
                             )}
                         </div>

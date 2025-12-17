@@ -76,13 +76,13 @@ export function generateCanonicalHeaders(metrics: string[]): any[][] {
     const category = def?.category || 'CUSTOM';
 
     if (category !== lastCategory) {
-      const categoryLabel = {
+      const categoryLabel = ({
         'PERFORMANCE': '体能负荷',
         'MOLECULAR': '分子负荷',
         'IMAGING': '影像负荷',
         'SIDE_EFFECTS': '副作用',
-        'CUSTOM': '其他指标',  // Custom metrics get "Other Metrics" category
-      }[category] || '其他指标';
+        'CUSTOM': '其他指标',
+      } as Record<string, string>)[category] || '其他指标';
 
       categoryRow[currentIdx] = categoryLabel;
       lastCategory = category;

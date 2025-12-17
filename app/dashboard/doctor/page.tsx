@@ -35,7 +35,7 @@ export default async function DoctorDashboard() {
                         <div className="w-8 h-8 bg-emerald-600 rounded flex items-center justify-center text-white">
                             <Activity className="w-5 h-5" />
                         </div>
-                        <span className="font-bold text-slate-800 text-lg">OncoTracker <span className="text-emerald-600 text-xs ml-1 bg-emerald-100 px-2 py-0.5 rounded-full">Provider</span></span>
+                        <span className="font-bold text-slate-800 text-lg">OncoTracker <span className="text-emerald-600 text-xs ml-1 bg-emerald-100 px-2 py-0.5 rounded-full">医生端</span></span>
                     </div>
                     {/* Mobile User Menu could go here, for now keeping it simple */}
                 </div>
@@ -43,7 +43,7 @@ export default async function DoctorDashboard() {
                     <span className="text-slate-600 text-sm truncate max-w-[150px] md:max-w-none">Dr. {user?.user_metadata?.full_name || 'SciX'}</span>
                     <Link href="/auth/logout">
                         <Button variant="ghost" size="sm" className="text-slate-500 hover:text-red-600">
-                            <LogOut className="w-4 h-4 mr-2" /> <span className="hidden md:inline">Sign Out</span><span className="md:hidden">Exit</span>
+                            <LogOut className="w-4 h-4 mr-2" /> <span className="hidden md:inline">退出登录</span><span className="md:hidden">退出</span>
                         </Button>
                     </Link>
                 </div>
@@ -52,10 +52,10 @@ export default async function DoctorDashboard() {
             {/* Main Content */}
             <main className="flex-1 p-4 md:p-6 max-w-7xl mx-auto w-full space-y-6">
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                    <h1 className="text-2xl md:text-3xl font-bold text-slate-900">My Patients</h1>
+                    <h1 className="text-2xl md:text-3xl font-bold text-slate-900">我的患者</h1>
                     <Link href="/dashboard/doctor/add-patient" className="w-full md:w-auto">
                         <Button className="bg-emerald-600 hover:bg-emerald-700 gap-2 w-full md:w-auto">
-                            <Plus className="w-4 h-4" /> Add Patient
+                            <Plus className="w-4 h-4" /> 添加患者
                         </Button>
                     </Link>
                 </div>
@@ -63,7 +63,7 @@ export default async function DoctorDashboard() {
                 {/* Search Bar */}
                 <div className="relative max-w-md">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <Input placeholder="Search by name or MRN..." className="pl-10" />
+                    <Input placeholder="按姓名或病历号搜索..." className="pl-10" />
                 </div>
 
                 {/* Patient List */}
@@ -74,9 +74,9 @@ export default async function DoctorDashboard() {
                         ))
                     ) : (
                         <div className="text-center py-12 bg-white rounded-lg border border-slate-200">
-                            <p className="text-slate-500 mb-4">No patients found.</p>
+                            <p className="text-slate-500 mb-4">暂无患者记录</p>
                             <Link href="/dashboard/doctor/add-patient">
-                                <Button variant="outline">Add your first patient</Button>
+                                <Button variant="outline">添加第一位患者</Button>
                             </Link>
                         </div>
                     )}

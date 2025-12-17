@@ -11,8 +11,8 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
     const params = await searchParams;
     const dataset = await loadDataset(params.patientId);
     const title = dataset.patientName
-        ? `${dataset.patientName}'s Patient Journey`
-        : 'Patient Journey';
+        ? `${dataset.patientName}的病程旅程`
+        : '患者病程';
 
     return {
         title: title,

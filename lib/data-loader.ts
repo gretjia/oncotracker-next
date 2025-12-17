@@ -243,5 +243,5 @@ export async function loadDataset(patientId?: string): Promise<FormalDataset> {
         return newRow;
     });
 
-    return { FormalDataset: mappedData, patientName };
+    return { FormalDataset: mappedData, patientName: patientName || undefined };
 }

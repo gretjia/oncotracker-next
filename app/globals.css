@@ -131,3 +131,38 @@
     print-color-adjust: exact;
   }
 }
+
+/* iPad Safe Area Support */
+@supports (padding: env(safe-area-inset-bottom)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Touch Device Optimizations (tablets, phones) */
+@media (pointer: coarse) {
+  /* Ensure minimum tap target size of 44px for accessibility */
+  button, 
+  [role="button"],
+  a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Increase spacing between interactive elements */
+  .gap-2 {
+    gap: 0.75rem;
+  }
+  
+  /* Larger text inputs on touch devices */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="file"],
+  textarea {
+    font-size: 16px; /* Prevents iOS zoom on focus */
+    min-height: 48px;
+  }
+}
