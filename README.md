@@ -2,10 +2,28 @@
 
 Advanced patient journey visualization and management platform for modern oncology care.
 
+> [!IMPORTANT]
+> **Cloud Deployment & Rebuilds**: For detailed instructions on deploying to Aliyun/Production, handling memory issues, and fixing common SSL/Storage bugs, see [cloudbuilddebug.md](./cloudbuilddebug.md).
+
+## 🚀 Global Deployment Guide
+
+For deploying to new servers from scratch, use the automated scripts in the `deployment/` directory.
+
+1. **System Setup**: Run `bash deployment/01-setup-server.sh` (installs Node, Nginx, PM2, and configures swap).
+2. **Supabase Setup**: Run `bash deployment/02-setup-supabase.sh` (installs Docker and self-hosted Supabase).
+3. **App Deployment**:
+    - Copy your source code to the server.
+    - Create a `.env.production` file based on `.env.example`.
+    - Run `bash deployment/03-deploy-app.sh` (builds and starts the app with PM2).
+4. **Network Configuration**: Use `deployment/04-setup-nginx.sh` and `deployment/05-setup-ssl-ip.sh` to configure domain routing and SSL.
+
+For quick redeployments of existing servers, use `deployment/remote_deploy.sh`.
+
 ## Features
 
 - **Mobile Optimized**: Fully responsive design with touch support and landscape optimization.
 - **Patient Journey Visualizer**: Interactive timeline of treatments, events, and metrics (D3.js).
+  - **Active Metric Highlighting**: Click any active metric to highlight its trend line and see details clearly.
   - **Persistent Settings**: Automatically saves your view preferences (colors, scales, visibility) for each patient.
   - **Customizable Metrics**: Adjust colors, scales, and shifts for perfect visualization.
 - **Generative UI Assistant**: Data-aware chatbot that analyzes patient metrics and controls the visualization.
@@ -70,7 +88,7 @@ For development and testing, the following accounts are available via mock authe
 
 ## Project Structure
 
-```
+```text
 oncotracker-next/
 ├── app/                          # App Router (Pages, API Routes, Server Actions)
 │   ├── actions/                  # Server Actions (auth, patient, upload)

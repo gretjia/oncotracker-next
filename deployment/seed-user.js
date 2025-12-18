@@ -3,8 +3,8 @@ const { createClient } = require('@supabase/supabase-js');
 // Allow self-signed certificates
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-const SUPABASE_URL = 'https://8.222.155.67/supabase';
-const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q';
+const SUPABASE_URL = 'https://47.236.227.167/supabase';
+const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UtZGVtbyIsImlhdCI6MTc2NTk3MzgwNywiZXhwIjoyMDgxMzMzODA3fQ.Xx72XXYmhSun7itXn6ul3HEg3CBupM1kg8W083wGYnI';
 
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 

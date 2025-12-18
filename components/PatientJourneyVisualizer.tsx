@@ -362,13 +362,20 @@ export function PatientJourneyVisualizer({ dataset, highlightMetric, initialSett
 
         window.addEventListener('beforeprint', handleBeforePrint);
         window.addEventListener('afterprint', handleAfterPrint);
-
         return () => {
             resizeObserver.disconnect();
             window.removeEventListener('beforeprint', handleBeforePrint);
             window.removeEventListener('afterprint', handleAfterPrint);
         };
     }, []);
+
+    // Sync data state when dataset prop changes
+    useEffect(() => {
+        setData(processData(dataset));
+    }, [dataset]);
+
+    const prevPatientRef = useRef(patientId);
+    const prevDimensions = useRef({ width: 0, height: 0 });
 
     // Init Chart
     useEffect(() => {
@@ -377,6 +384,16 @@ export function PatientJourneyVisualizer({ dataset, highlightMetric, initialSett
         const container = chartContainerRef.current;
         const width = container.clientWidth;
         const height = container.clientHeight;
+
+        // Check if this is a new patient to decide if we should reset zoom
+        const isNewPatient = prevPatientRef.current !== patientId;
+        prevPatientRef.current = patientId;
+
+        // Preserve current zoom transform before removing SVG (only if not a new patient)
+        let existingTransform = d3.zoomIdentity;
+        if (svgRef.current && !isNewPatient) {
+            existingTransform = d3.zoomTransform(svgRef.current);
+        }
 
         // Ensure view dimensions match container
         if (width !== view.width || height !== view.height) {
@@ -453,13 +470,18 @@ export function PatientJourneyVisualizer({ dataset, highlightMetric, initialSett
 
         const contentLayer = gMain.append("g").attr("id", "content-layer").attr("clip-path", "url(#mainClip)");
         contentLayer.append("g").attr("id", "phase-layer");
-        contentLayer.append("g").attr("id", "line-layer").attr("clip-path", "url(#chartClip)");
-        contentLayer.append("g").attr("id", "dot-layer").attr("clip-path", "url(#chartClip)");
-        contentLayer.append("g").attr("id", "label-layer").attr("clip-path", "url(#chartClip)");
+        contentLayer.append("g").attr("id", "line-layer");
+        contentLayer.append("g").attr("id", "dot-layer");
+        contentLayer.append("g").attr("id", "label-layer");
 
-        updateChart(x, y);
+        // Restore zoom transform or set initial standard view
+        if (!isNewPatient && existingTransform !== d3.zoomIdentity) {
+            (svg as any).call(zoom.transform, existingTransform);
+        } else {
+            updateChart(x, y);
+        }
 
-    }, [data, view.width, view.height]);
+    }, [dataset, view.width, view.height, view.margin.left, view.margin.top, view.margin.right, view.margin.bottom]); // Removed 'data' to prevent reset on metric toggle
 
     // Update Chart Function
     const updateChart = (scaleX: d3.ScaleTime<number, number>, scaleY: d3.ScaleLinear<number, number>) => {
@@ -580,13 +602,34 @@ export function PatientJourneyVisualizer({ dataset, highlightMetric, initialSett
         labelLayer.selectAll("*").remove();
 
         const activeMetrics = Object.values(data.metrics).filter(m => m.active);
+        const anyExpanded = activeMetrics.some(m => m.expanded);
+
         activeMetrics.forEach(m => {
+            const isHighlighted = m.expanded;
             const customY = (val: number) => scaleY(((val - m.mid) * m.scale) + m.mid + m.offset);
 
             if (m.showLine) {
                 const line = d3.line<any>().x(d => scaleX(d.date)).y(d => customY(d.value)).curve(d3.curveCatmullRom);
-                lineLayer.append("path").datum(m.data).attr("class", "metric-path").attr("d", line).attr("fill", "none").attr("stroke", "white").attr("stroke-width", 3).attr("stroke-opacity", 0.8 * m.opacity);
-                lineLayer.append("path").datum(m.data).attr("class", "metric-path").attr("d", line).attr("fill", "none").attr("stroke", m.color).attr("stroke-width", 1.5).attr("stroke-opacity", m.opacity);
+
+                // Backdrop line (white border)
+                lineLayer.append("path")
+                    .datum(m.data)
+                    .attr("class", "metric-path")
+                    .attr("d", line)
+                    .attr("fill", "none")
+                    .attr("stroke", "white")
+                    .attr("stroke-width", isHighlighted ? 6 : 3)
+                    .attr("stroke-opacity", isHighlighted ? 1.0 : (anyExpanded ? 0.05 : 0.8) * m.opacity);
+
+                // Main color line
+                lineLayer.append("path")
+                    .datum(m.data)
+                    .attr("class", "metric-path")
+                    .attr("d", line)
+                    .attr("fill", "none")
+                    .attr("stroke", m.color)
+                    .attr("stroke-width", isHighlighted ? 3.5 : 1.5)
+                    .attr("stroke-opacity", isHighlighted ? 1.0 : (anyExpanded ? 0.1 : 1.0) * m.opacity);
             }
 
             // Removed alert-pulse group to eliminate black circle artifact
@@ -598,19 +641,21 @@ export function PatientJourneyVisualizer({ dataset, highlightMetric, initialSett
 
             dots.selectAll("circle").data(m.data).join("circle")
                 .attr("cx", d => scaleX(d.date)).attr("cy", d => customY(d.value))
-                .attr("r", 3.5)
+                .attr("r", isHighlighted ? d => d.isAlert ? 6 : 5 : 3.5)
                 // If red metric AND alert -> White Fill (hollow feel). Else -> Metric Color Fill.
                 .attr("fill", d => (d.isAlert && isRedMetric) ? "white" : m.color)
                 // If alert -> Red Stroke. If red metric+alert -> Red Stroke (creates the ring).
                 .attr("stroke", d => d.isAlert ? "#ef4444" : "white")
-                .attr("stroke-width", d => d.isAlert ? 2 : 1.5)
-                .attr("fill-opacity", m.opacity).attr("stroke-opacity", m.opacity);
+                .attr("stroke-width", d => d.isAlert ? 2 : (isHighlighted ? 2 : 1.5))
+                .attr("fill-opacity", isHighlighted ? 1.0 : (anyExpanded ? 0.1 : 1.0) * m.opacity)
+                .attr("stroke-opacity", isHighlighted ? 1.0 : (anyExpanded ? 0.1 : 1.0) * m.opacity);
 
             if (m.showValues) {
                 labelLayer.append("g").attr("class", "metric-value-labels").selectAll("text").data(m.data).join("text")
                     .attr("x", d => scaleX(d.date)).attr("y", d => customY(d.value) - 8)
                     .attr("text-anchor", "middle").attr("font-size", "9px").attr("font-weight", "bold")
-                    .attr("fill", d => d.isAlert ? "#ef4444" : m.color).attr("opacity", m.opacity * 0.9)
+                    .attr("fill", d => d.isAlert ? "#ef4444" : m.color)
+                    .attr("opacity", isHighlighted ? 1.0 : (anyExpanded ? 0.05 : 0.9) * m.opacity)
                     .text(d => d.value.toFixed(1));
             }
         });
@@ -706,12 +751,24 @@ export function PatientJourneyVisualizer({ dataset, highlightMetric, initialSett
                             <div className="text-[9px] font-bold text-slate-400 uppercase whitespace-nowrap flex-shrink-0">Active:</div>
                             <div className="flex items-center gap-2 pr-2">
                                 {Object.values(data.metrics).filter(m => m.active).map(m => (
-                                    <div key={m.name} className="flex items-center gap-1 px-1 py-0.5 text-[10px] text-slate-500 whitespace-nowrap cursor-pointer hover:text-slate-900 transition-colors" onClick={() => updateMetricProp(m.name, 'expanded', !m.expanded)}>
-                                        <div className="flex items-center relative w-6 justify-center">
-                                            <div className="absolute w-full h-0.5" style={{ backgroundColor: m.color, opacity: 0.6 }}></div>
-                                            <div className="w-2 h-2 rounded-full z-10 border border-white" style={{ backgroundColor: m.color, opacity: m.opacity }}></div>
+                                    <div
+                                        key={m.name}
+                                        className={cn(
+                                            "flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] rounded-lg transition-all cursor-pointer group",
+                                            m.expanded
+                                                ? "bg-white text-slate-900 shadow-md ring-2 ring-blue-500 border-blue-500"
+                                                : "bg-white text-slate-500 hover:text-slate-900 border border-slate-200 hover:border-slate-300"
+                                        )}
+                                        onClick={() => updateMetricProp(m.name, 'expanded', !m.expanded)}
+                                        style={m.expanded ? { borderColor: m.color } : {}}
+                                    >
+                                        <div className="flex items-center relative w-4 justify-center">
+                                            <div className={cn("w-2.5 h-2.5 rounded-full z-10 border shadow-sm", m.expanded ? "border-white ring-2" : "border-white/50")} style={{ backgroundColor: m.color }}></div>
                                         </div>
-                                        <span className="font-bold text-slate-600">{m.name}</span>
+                                        <span className={cn("font-bold whitespace-nowrap", m.expanded ? "text-slate-900" : "text-slate-600 group-hover:text-slate-900")}>{m.name}</span>
+                                        {m.expanded && (
+                                            <div className="w-1.5 h-1.5 rounded-full ml-0.5 animate-pulse" style={{ backgroundColor: m.color }}></div>
+                                        )}
                                     </div>
                                 ))}
                             </div>

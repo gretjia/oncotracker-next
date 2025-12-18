@@ -83,3 +83,8 @@ scp -i deployment/oncotracker.pem build.tar.gz root@8.222.155.67:/opt/oncotracke
 ssh root@8.222.155.67
 cd /opt/oncotracker && tar -xzf build.tar.gz && pm2 restart oncotracker-next
 ```
+
+### 🔧 Deployment Script Updates (2025-12-17)
+
+- **SSH Authentication**: Updated `deployment/03-deploy-app.sh` to explicitly use the `deployment/oncotracker.pem` key file for all SSH and SCP operations.
+- **Connection Reliability**: Addressed `kex_exchange_identification` issues by ensuring proper key file formatting and permissions.

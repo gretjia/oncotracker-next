@@ -5,8 +5,8 @@
 set -e
 
 # Configuration - UPDATE THESE VALUES
-ECS_IP="8.222.155.67"  # ECS Public IP
-ECS_USER="root"        # SSH user
+ECS_IP="47.236.227.167"  # ECS Public IP
+ECS_USER="ecs-user"        # SSH user
 DEPLOY_PATH="/opt/oncotracker"
 
 echo "========================================="
@@ -42,19 +42,19 @@ tar -czf oncotracker-deploy.tar.gz \
 
 # Upload to ECS
 echo "📤 Uploading to ECS..."
-scp oncotracker-deploy.tar.gz ${ECS_USER}@${ECS_IP}:${DEPLOY_PATH}/
+scp -i ../oncoali.pem -o StrictHostKeyChecking=no oncotracker-deploy.tar.gz ${ECS_USER}@${ECS_IP}:${DEPLOY_PATH}/
 
 # Upload environment file (you'll need to create this)
 if [ -f ".env.production" ]; then
     echo "📤 Uploading environment variables..."
-    scp .env.production ${ECS_USER}@${ECS_IP}:${DEPLOY_PATH}/.env.local
+    scp -i ../oncoali.pem -o StrictHostKeyChecking=no .env.production ${ECS_USER}@${ECS_IP}:${DEPLOY_PATH}/.env.local
 else
     echo "⚠️  Warning: .env.production not found. You'll need to create it on the server."
 fi
 
 # SSH into server and deploy
 echo "🚀 Deploying on server..."
-ssh ${ECS_USER}@${ECS_IP} << 'ENDSSH'
+ssh -i ../oncoali.pem -o StrictHostKeyChecking=no ${ECS_USER}@${ECS_IP} << 'ENDSSH'
 cd /opt/oncotracker
 
 # Extract deployment package
@@ -72,13 +72,14 @@ module.exports = {
   apps: [{
     name: 'oncotracker-next',
     script: 'node_modules/next/dist/bin/next',
-    args: 'start',
+    args: 'start --hostname 0.0.0.0',
     cwd: '/opt/oncotracker',
     instances: 2,
     exec_mode: 'cluster',
     env: {
       NODE_ENV: 'production',
-      PORT: 3000
+      PORT: 3000,
+      HOSTNAME: '0.0.0.0'
     }
   }]
 }

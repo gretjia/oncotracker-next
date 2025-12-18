@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.7.8 (2025-12-18)
+
+- **Fix:** **Aspect Ratio Reset** - Resolved issue where "横纵比" (Horizontal Zoom) and "纵横比" (Vertical Aspect Ratio) would reset when toggling metrics.
+- **Fix:** **D3 Zoom Persistence** - Implemented logic to capture and restore the D3 zoom transform during container resizes and state updates.
+- **Improved:** **Remote Deployment Strategy** - Switched to building directly on the Aliyun cloud server to bypass local performance bottlenecks and ensure environment parity.
+
+## v0.7.7 (2025-12-18)
+
+- **Feature:** **Active Metric Highlighting** - Added premium click-to-highlight functionality in the Patient Journey Visualizer.
+  - **Aggressive Contrast:** Highlighted metric lines are significantly thickened (3.5px) and given a 6px white glow, while non-selected metrics and labels are dimmed (0.1/0.05 opacity) to eliminate noise.
+  - **Premium Active Bar:** Redesigned bottom bar items with rounded-lg boxes, color-coded borders, and pulsating indicators for selected states.
+  - **Reversible Selection:** Clicking a highlighted metric in the active bar now correctly toggles it back to standard view.
+- **Environment:** **Domain-Based Routing** - Updated production configuration to use `biotinto.cn` for Supabase and site URLs, integrated with Nginx SSL proxy.
+
 ## v0.7.6 (2025-12-06)
 
 - **Feature:** **Excel-like Data Editor** - Completely redesigned the 'Edit Data' page for a dense, professional spreadsheet experience with compact rows and sharper borders.

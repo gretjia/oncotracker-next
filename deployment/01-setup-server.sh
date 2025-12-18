@@ -78,11 +78,13 @@ fi
 # Create application directory
 echo "📁 Creating application directory..."
 mkdir -p /opt/oncotracker
+chown -R ecs-user:users /opt/oncotracker
 chmod 755 /opt/oncotracker
 
 # Create Supabase directory
 echo "📁 Creating Supabase directory..."
 mkdir -p /opt/supabase
+chown -R ecs-user:users /opt/supabase
 chmod 755 /opt/supabase
 
 echo ""
