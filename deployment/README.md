@@ -1,5 +1,54 @@
 # OncoTracker Deployment Guide - Alibaba Cloud Singapore
 
+## 🔑 Current Production Server Access
+
+**Server:** `biotinto.cn`  
+**User:** `ecs-user` (NOT `root`)  
+**SSH Key:** `./oncoali.pem` (in repository root)
+
+```bash
+# Connect to production server
+ssh -i ../oncoali.pem ecs-user@biotinto.cn
+
+# Quick status check
+ssh -i ../oncoali.pem ecs-user@biotinto.cn "pm2 status; systemctl status nginx --no-pager"
+```
+
+> **Note:** See [`SERVER_ACCESS.md`](../../SERVER_ACCESS.md) in repository root for detailed access guide and common commands.
+
+## HTTPS Configuration (IMPORTANT)
+
+**Production URL:** `https://biotinto.cn` (with Let's Encrypt certificate)
+
+### SSL Certificate Status
+
+- **Certificate:** Let's Encrypt (trusted, auto-renews)
+- **Expires:** Check with `ssh -i ../oncoali.pem ecs-user@biotinto.cn "sudo certbot certificates"`
+- **Auto-renewal:** Configured via certbot systemd timer
+
+### If HTTPS Issues Occur
+
+**Symptom:** Browser shows "Not Secure" or falls back to HTTP even when typing `https://`
+
+**Root Cause:** Malformed Nginx configuration mixing HTTP/HTTPS listeners in same server block
+
+**Solution:**
+
+```bash
+# On server, run the automated fix script
+ssh -i ../oncoali.pem ecs-user@biotinto.cn
+sudo /home/ecs-user/fix-nginx-ssl.sh
+```
+
+**Manual fix:** Use the corrected configuration in `deployment/oncotracker_idn.conf`
+
+**Files:**
+
+- `fix-nginx-ssl.sh` - Automated Let's Encrypt installation
+- `oncotracker_idn.conf` - Corrected dual-block Nginx configuration
+
+---
+
 ## Quick Start
 
 You've created an ECS instance in Singapore. Follow these steps to deploy OncoTracker:
