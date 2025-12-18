@@ -64,27 +64,19 @@ For quick redeployments of existing servers, use `deployment/remote_deploy.sh`.
 
 ## Initial User Accounts
 
-For development and testing, the following accounts are available via mock authentication:
+For development and testing, create your own test accounts:
 
-### Doctor Account
+### Creating Test Accounts
 
-- **Email**: `scix@oncotracker.com`
-- **Password**: `Zx987@`
-- **Access**: Doctor Dashboard with patient "张莉 (Zhang Li)"
+1. Run the application locally
+2. Use the registration flow to create accounts for each role:
+   - Doctor account
+   - Patient account  
+   - Supervisor/Admin account
 
-### Patient Account
+> **For Production**: Use `scripts/seed_users.sql` to create accounts in Supabase with proper authentication.
 
-- **Email**: `zhangli@oncotracker.com`
-- **Password**: *(any password works in demo mode)*
-- **Access**: Patient Dashboard showing Dr. SciX as assigned doctor
-
-### Supervisor Account
-
-- **Email**: `admin@oncotracker.com`
-- **Password**: `OncoSciX@`
-- **Access**: Supervisor Dashboard for user management
-
-> **Note**: For production deployment, use `scripts/seed_users.sql` to create these users in Supabase with proper authentication.
+> **Security Note**: Never commit real credentials to version control. For demo instances, contact the repository owner.
 
 ## Project Structure
 
